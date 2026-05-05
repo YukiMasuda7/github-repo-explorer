@@ -64,6 +64,8 @@ def search_repositories(
     language: Optional[str] = Query(
         None, description="プログラミング言語（例：python, javascript）"
     ),
+    created_at: Optional[str] = Query(None, description="作成日（YYYY-MM-DD 以降）"),
+    pushed_at: Optional[str] = Query(None, description="最終更新（YYYY-MM-DD 以降）"),
     page: int = Query(1, ge=1, description="ページ番号"),
 ):
     url = "https://api.github.com/search/repositories"
@@ -83,7 +85,12 @@ def search_repositories(
     if language:
         query_parts.append(f"language:{language}")
 
-    # 少なくとも1つの条件が必要
+    if created_at:
+        query_parts.append(f"created:>={created_at}")
+
+    if pushed_at:
+        query_parts.append(f"pushed:>={pushed_at}")
+
     if not query_parts:
         return {"total_count": 0, "items": []}
 
