@@ -54,3 +54,26 @@ npm run dev
 ## APIドキュメント
 
 http://localhost:8000/docs
+
+---
+
+## Formatting & Linting (変更後に実行)
+
+フロントエンドおよびバックエンドで変更を行ったら、以下のコマンドでフォーマットと静的チェックを実行してください。
+
+- Frontend (`frontend/`)
+
+```bash
+npx prettier --write .
+npm run lint
+```
+
+- Backend (Python, `backend/` - Poetry を使用)
+
+```bash
+poetry run black .
+poetry run ruff format .
+poetry run ruff check --fix .
+```
+
+注: プロジェクトでは各種 code formatter と linter を使用しています。CI がある場合は CI のルールに合わせて実行してください。

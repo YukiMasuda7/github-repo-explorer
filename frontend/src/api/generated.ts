@@ -4,7 +4,7 @@
  * FastAPI
  * OpenAPI spec version: 0.1.0
  */
-import { api } from '../lib/api';
+import { api } from "../lib/api";
 export type ValidationErrorCtx = { [key: string]: unknown };
 
 export interface ValidationError {
@@ -42,51 +42,48 @@ export interface SearchResponse {
 }
 
 export type SearchRepositoriesParams = {
-/**
- * 検索キーワード
- */
-keyword?: string | null;
-/**
- * ユーザー/組織名（user:username または org:orgname）
- */
-user_org?: string | null;
-/**
- * リポジトリ名に含まれるテキスト
- */
-repo_name?: string | null;
-/**
- * プログラミング言語（例：python, javascript）
- */
-language?: string | null;
-/**
- * 作成日（YYYY-MM-DD 以降）
- */
-created_at?: string | null;
-/**
- * 最終更新（YYYY-MM-DD 以降）
- */
-pushed_at?: string | null;
-/**
- * ページ番号
- * @minimum 1
- */
-page?: number;
+  /**
+   * 検索キーワード
+   */
+  keyword?: string | null;
+  /**
+   * ユーザー/組織名（user:username または org:orgname）
+   */
+  user_org?: string | null;
+  /**
+   * リポジトリ名に含まれるテキスト
+   */
+  repo_name?: string | null;
+  /**
+   * プログラミング言語（例：python, javascript）
+   */
+  language?: string | null;
+  /**
+   * 作成日（YYYY-MM-DD 以降）
+   */
+  created_at?: string | null;
+  /**
+   * 更新日（YYYY-MM-DD 以降）
+   */
+  pushed_at?: string | null;
+  /**
+   * ページ番号
+   * @minimum 1
+   */
+  page?: number;
 };
 
 export const getFastAPI = () => {
-/**
- * 複数フィルタを使ってGitHubのリポジトリを検索し、50件ずつ返す。
- * @summary GitHubリポジトリ検索
- */
-const searchRepositories = (
-    params?: SearchRepositoriesParams,
- ) => {
-      return api<SearchResponse>(
-      {url: `/repositories`, method: 'GET',
-        params
-    },
-      );
-    }
+  /**
+   * 複数フィルタを使ってGitHubのリポジトリを検索し、50件ずつ返す。
+   * @summary GitHubリポジトリ検索
+   */
+  const searchRepositories = (params?: SearchRepositoriesParams) => {
+    return api<SearchResponse>({ url: `/repositories`, method: "GET", params });
+  };
 
-return {searchRepositories}};
-export type SearchRepositoriesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getFastAPI>['searchRepositories']>>>
+  return { searchRepositories };
+};
+export type SearchRepositoriesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getFastAPI>["searchRepositories"]>>
+>;

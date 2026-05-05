@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
 from typing import List, Optional
+from enum import Enum
 
 app = FastAPI()
 
@@ -46,6 +47,25 @@ class SearchResponse(BaseModel):
 # -----------------------------
 
 
+# --- Enums for clarity and type-safety ---
+
+
+class DateFilter(str, Enum):
+    created = "created"
+    pushed = "pushed"
+
+
+class SortBy(str, Enum):
+    stars = "stars"
+    forks = "forks"
+    watchers = "watchers"
+
+
+class SortOrder(str, Enum):
+    asc = "asc"
+    desc = "desc"
+
+
 @app.get(
     "/repositories",
     operation_id="searchRepositories",
@@ -65,7 +85,7 @@ def search_repositories(
         None, description="プログラミング言語（例：python, javascript）"
     ),
     created_at: Optional[str] = Query(None, description="作成日（YYYY-MM-DD 以降）"),
-    pushed_at: Optional[str] = Query(None, description="最終更新（YYYY-MM-DD 以降）"),
+    pushed_at: Optional[str] = Query(None, description="更新日（YYYY-MM-DD 以降）"),
     page: int = Query(1, ge=1, description="ページ番号"),
 ):
     url = "https://api.github.com/search/repositories"
@@ -100,8 +120,8 @@ def search_repositories(
         "q": q,
         "per_page": 50,
         "page": page,
-        "sort": "stars",
-        "order": "desc",
+        "sort": SortBy.stars.value,
+        "order": SortOrder.desc.value,
     }
 
     res = requests.get(url, params=params)

@@ -3,6 +3,22 @@
 import { useEffect, useRef, useState } from "react";
 import { searchRepositories, Repository } from "../api";
 
+enum DateFilterOption {
+  Created = "created",
+  Pushed = "pushed",
+}
+
+enum SortByOption {
+  Stars = "stars",
+  Forks = "forks",
+  Watchers = "watchers",
+}
+
+enum SortOrderOption {
+  Asc = "asc",
+  Desc = "desc",
+}
+
 export default function Home() {
   const resultsSummaryRef = useRef<HTMLDivElement | null>(null);
   const shouldScrollResultsRef = useRef(false);
@@ -10,16 +26,16 @@ export default function Home() {
   const [userOrg, setUserOrg] = useState("");
   const [repoName, setRepoName] = useState("");
   const [language, setLanguage] = useState("");
-  const [dateFilter, setDateFilter] = useState<"created" | "pushed" | null>(
-    null,
-  ); // "created" | "pushed" | null
+  const [dateFilter, setDateFilter] = useState<DateFilterOption | null>(null); // DateFilterOption | null
   const [dateValue, setDateValue] = useState<string | null>(null);
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [totalCount, setTotalCount] = useState(0);
-  const [sortBy, setSortBy] = useState<"stars" | "forks" | "watchers">("stars");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<SortByOption>(SortByOption.Stars);
+  const [sortOrder, setSortOrder] = useState<SortOrderOption>(
+    SortOrderOption.Desc,
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInput, setPageInput] = useState<number | null>(null);
   const itemsPerPage = 50;
@@ -47,8 +63,13 @@ export default function Home() {
         repo_name: repoName.trim() || undefined,
         language: language.trim() || undefined,
         created_at:
-          dateFilter === "created" && dateValue ? dateValue : undefined,
-        pushed_at: dateFilter === "pushed" && dateValue ? dateValue : undefined,
+          dateFilter === DateFilterOption.Created && dateValue
+            ? dateValue
+            : undefined,
+        pushed_at:
+          dateFilter === DateFilterOption.Pushed && dateValue
+            ? dateValue
+            : undefined,
         page,
       });
       setRepositories(res.data.items || []);
@@ -96,21 +117,41 @@ export default function Home() {
       let aValue = 0;
       let bValue = 0;
 
-      if (sortBy === "stars") {
+      if (sortBy === SortByOption.Stars) {
         aValue = a.stargazers_count;
         bValue = b.stargazers_count;
-      } else if (sortBy === "forks") {
+      } else if (sortBy === SortByOption.Forks) {
         aValue = a.forks_count;
         bValue = b.forks_count;
-      } else if (sortBy === "watchers") {
+      } else if (sortBy === SortByOption.Watchers) {
         aValue = a.watchers_count;
         bValue = b.watchers_count;
       }
 
-      return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
+      return sortOrder === SortOrderOption.Desc
+        ? bValue - aValue
+        : aValue - bValue;
     });
 
     return sorted;
+  };
+
+  const handleChangeSortBy = async (value: SortByOption) => {
+    setSortBy(value);
+    setCurrentPage(1);
+    setPageInput(null);
+    if (totalCount > 0) {
+      await fetchRepositories(1);
+    }
+  };
+
+  const handleChangeSortOrder = async (value: SortOrderOption) => {
+    setSortOrder(value);
+    setCurrentPage(1);
+    setPageInput(null);
+    if (totalCount > 0) {
+      await fetchRepositories(1);
+    }
   };
 
   const handleClearAll = () => {
@@ -225,9 +266,9 @@ export default function Home() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setDateFilter("created")}
+                      onClick={() => setDateFilter(DateFilterOption.Created)}
                       className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
-                        dateFilter === "created"
+                        dateFilter === DateFilterOption.Created
                           ? "border-sky-500 bg-sky-600 text-white"
                           : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
                       }`}
@@ -236,9 +277,9 @@ export default function Home() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDateFilter("pushed")}
+                      onClick={() => setDateFilter(DateFilterOption.Pushed)}
                       className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
-                        dateFilter === "pushed"
+                        dateFilter === DateFilterOption.Pushed
                           ? "border-sky-500 bg-sky-600 text-white"
                           : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
                       }`}
@@ -328,16 +369,21 @@ export default function Home() {
                     </label>
                     <select
                       value={sortBy}
-                      onChange={(e) =>
-                        setSortBy(
-                          e.target.value as "stars" | "forks" | "watchers",
-                        )
-                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (
+                          v === SortByOption.Stars ||
+                          v === SortByOption.Forks ||
+                          v === SortByOption.Watchers
+                        ) {
+                          handleChangeSortBy(v as SortByOption);
+                        }
+                      }}
                       className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-500"
                     >
-                      <option value="stars">⭐ Star 数</option>
-                      <option value="forks">🍴 Fork 数</option>
-                      <option value="watchers">👀 Watch 数</option>
+                      <option value={SortByOption.Stars}>⭐ Star 数</option>
+                      <option value={SortByOption.Forks}>🍴 Fork 数</option>
+                      <option value={SortByOption.Watchers}>👀 Watch 数</option>
                     </select>
                   </div>
 
@@ -347,13 +393,23 @@ export default function Home() {
                     </label>
                     <select
                       value={sortOrder}
-                      onChange={(e) =>
-                        setSortOrder(e.target.value as "asc" | "desc")
-                      }
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        if (
+                          v === SortOrderOption.Asc ||
+                          v === SortOrderOption.Desc
+                        ) {
+                          handleChangeSortOrder(v as SortOrderOption);
+                        }
+                      }}
                       className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-500"
                     >
-                      <option value="desc">降順 (多い順)</option>
-                      <option value="asc">昇順 (少ない順)</option>
+                      <option value={SortOrderOption.Desc}>
+                        降順 (多い順)
+                      </option>
+                      <option value={SortOrderOption.Asc}>
+                        昇順 (少ない順)
+                      </option>
                     </select>
                   </div>
                 </div>
