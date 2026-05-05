@@ -6,7 +6,7 @@ const instance = axios.create({
 });
 
 export const api = <T = unknown>(
-  config: AxiosRequestConfig
+  config: AxiosRequestConfig,
 ): Promise<AxiosResponse<T>> => {
   return instance(config);
 };

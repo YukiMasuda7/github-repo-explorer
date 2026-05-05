@@ -1,4 +1,4 @@
-export default {
+const orvalConfig = {
   api: {
     input: "http://localhost:8000/openapi.json",
     output: {
@@ -14,3 +14,5 @@ export default {
     },
   },
 };
+
+export default orvalConfig;

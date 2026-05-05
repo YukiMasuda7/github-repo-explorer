@@ -1,31 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { searchRepositories } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { searchRepositories, Repository } from "../api";
 
 export default function Home() {
+  const resultsSummaryRef = useRef<HTMLDivElement | null>(null);
+  const shouldScrollResultsRef = useRef(false);
   const [keyword, setKeyword] = useState("");
   const [userOrg, setUserOrg] = useState("");
   const [repoName, setRepoName] = useState("");
   const [language, setLanguage] = useState("");
-  const [repositories, setRepositories] = useState<any[]>([]);
+  const [dateFilter, setDateFilter] = useState<"created" | "pushed" | null>(
+    null,
+  ); // "created" | "pushed" | null
+  const [dateValue, setDateValue] = useState<string | null>(null);
+  const [repositories, setRepositories] = useState<Repository[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [totalCount, setTotalCount] = useState(0);
   const [sortBy, setSortBy] = useState<"stars" | "forks" | "watchers">("stars");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageInput, setPageInput] = useState("1");
+  const [pageInput, setPageInput] = useState<number | null>(null);
   const itemsPerPage = 50;
 
   const fetchRepositories = async (page: number) => {
-    if (!keyword.trim() && !userOrg.trim() && !repoName.trim() && !language.trim()) {
+    if (
+      !keyword.trim() &&
+      !userOrg.trim() &&
+      !repoName.trim() &&
+      !language.trim() &&
+      !dateValue
+    ) {
       setError("少なくとも1つの検索条件を入力してください");
       return;
     }
 
     setLoading(true);
     setError("");
+    shouldScrollResultsRef.current = true;
 
     try {
       const res = await searchRepositories({
@@ -33,14 +46,24 @@ export default function Home() {
         user_org: userOrg.trim() || undefined,
         repo_name: repoName.trim() || undefined,
         language: language.trim() || undefined,
+        created_at:
+          dateFilter === "created" && dateValue ? dateValue : undefined,
+        pushed_at: dateFilter === "pushed" && dateValue ? dateValue : undefined,
         page,
       });
       setRepositories(res.data.items || []);
       setTotalCount(res.data.total_count || 0);
       setCurrentPage(page);
-      setPageInput(String(page));
-    } catch (err: any) {
-      const errorMessage = err.message || "検索に失敗しました";
+      setPageInput(null);
+    } catch (err: unknown) {
+      shouldScrollResultsRef.current = false;
+      let errorMessage = "検索に失敗しました";
+      if (err instanceof Error) {
+        errorMessage = err.message || errorMessage;
+      } else if (typeof err === "string") {
+        errorMessage = err || errorMessage;
+      }
+
       if (!errorMessage.includes("Request failed with status code 500")) {
         setError(errorMessage);
       } else {
@@ -51,6 +74,16 @@ export default function Home() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!loading && shouldScrollResultsRef.current && totalCount > 0) {
+      shouldScrollResultsRef.current = false;
+      resultsSummaryRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+  }, [currentPage, loading, totalCount]);
 
   const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -85,11 +118,13 @@ export default function Home() {
     setUserOrg("");
     setRepoName("");
     setLanguage("");
+    setDateFilter(null);
+    setDateValue(null);
     setRepositories([]);
     setError("");
     setTotalCount(0);
     setCurrentPage(1);
-    setPageInput("1");
+    setPageInput(null);
   };
 
   const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
@@ -109,10 +144,15 @@ export default function Home() {
   };
 
   const handlePageJump = async () => {
-    const nextPage = Number.parseInt(pageInput, 10);
+    if (pageInput === null) {
+      setPageInput(null);
+      return;
+    }
 
-    if (Number.isNaN(nextPage) || nextPage < 1) {
-      setPageInput(String(currentPage));
+    const nextPage = pageInput;
+
+    if (nextPage < 1) {
+      setPageInput(null);
       return;
     }
 
@@ -132,18 +172,19 @@ export default function Home() {
             GitHub リポジトリ検索
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-300 sm:text-base">
-            <strong className="font-semibold text-white">検索シンタックス:</strong> AND（`&&` または スペース区切り）、OR（`||`）、NOT（`!` または `-`）
-                    <br />
-                    例: `react && typescript`, `vue || angular`, `!deprecated`
+            <strong className="font-semibold text-white">
+              検索シンタックス:
+            </strong>{" "}
+            AND（`&&` または スペース区切り）、OR（`||`）、NOT（`!` または `-`）
+            <br />
+            例: `react && typescript`, `vue || angular`, `!deprecated`
           </p>
         </header>
 
         <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/30 backdrop-blur sm:p-6">
           <form onSubmit={handleSearch} className="space-y-5">
             <div className="space-y-5">
-              <Field
-                label="キーワード"
-              >
+              <Field label="キーワード">
                 <TextInput
                   value={keyword}
                   onChange={setKeyword}
@@ -178,6 +219,60 @@ export default function Home() {
                   onClear={() => setLanguage("")}
                 />
               </Field>
+
+              <Field label="日付フィルタ">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setDateFilter("created")}
+                      className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        dateFilter === "created"
+                          ? "border-sky-500 bg-sky-600 text-white"
+                          : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
+                      }`}
+                    >
+                      📅作成日
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDateFilter("pushed")}
+                      className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
+                        dateFilter === "pushed"
+                          ? "border-sky-500 bg-sky-600 text-white"
+                          : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
+                      }`}
+                    >
+                      🔄更新日
+                    </button>
+                  </div>
+                  {dateFilter !== null && (
+                    <div className="flex gap-2 sm:items-center">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="date"
+                          value={dateValue || ""}
+                          onChange={(e) => setDateValue(e.target.value || null)}
+                          className="rounded-lg border border-white/15 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+                        />
+                        <span className="text-sm font-medium text-neutral-300 whitespace-nowrap">
+                          以降
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDateFilter(null);
+                          setDateValue(null);
+                        }}
+                        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
+                      >
+                        ✕ クリア
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </Field>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -208,11 +303,18 @@ export default function Home() {
           )}
 
           {totalCount > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div
+              ref={resultsSummaryRef}
+              className="mt-2 scroll-mt-8 rounded-2xl border border-white/10 bg-white/5 p-4"
+            >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="space-y-1">
                   <p className="text-sm text-neutral-300 sm:text-base">
-                    見つかった件数: <span className="font-semibold text-white">{totalCount}</span> 件
+                    見つかった件数:{" "}
+                    <span className="font-semibold text-white">
+                      {totalCount}
+                    </span>{" "}
+                    件
                   </p>
                   <p className="text-xs text-neutral-400">
                     ページ {currentPage} / {totalPages}（{itemsPerPage} 件）
@@ -221,10 +323,16 @@ export default function Home() {
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                   <div className="flex items-center gap-2">
-                    <label className="text-sm font-semibold text-neutral-200">ソート:</label>
+                    <label className="text-sm font-semibold text-neutral-200">
+                      ソート:
+                    </label>
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as "stars" | "forks" | "watchers")}
+                      onChange={(e) =>
+                        setSortBy(
+                          e.target.value as "stars" | "forks" | "watchers",
+                        )
+                      }
                       className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-500"
                     >
                       <option value="stars">⭐ Star 数</option>
@@ -234,24 +342,27 @@ export default function Home() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <label className="text-sm font-semibold text-neutral-200">順序:</label>
+                    <label className="text-sm font-semibold text-neutral-200">
+                      順序:
+                    </label>
                     <select
                       value={sortOrder}
-                      onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+                      onChange={(e) =>
+                        setSortOrder(e.target.value as "asc" | "desc")
+                      }
                       className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-500"
                     >
                       <option value="desc">降順 (多い順)</option>
                       <option value="asc">昇順 (少ない順)</option>
                     </select>
                   </div>
-
                 </div>
               </div>
             </div>
           )}
 
           <div className="grid gap-4">
-            {getSortedRepositories().map((repo: any) => (
+            {getSortedRepositories().map((repo: Repository) => (
               <article
                 key={repo.id}
                 className="w-full rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg shadow-black/20 transition hover:border-sky-400/40 hover:bg-white/[0.07]"
@@ -281,13 +392,14 @@ export default function Home() {
             ))}
           </div>
 
-          {repositories.length === 0 && !loading && (keyword || userOrg || repoName || language) && (
-            <p className="text-sm text-neutral-400">結果はありません</p>
-          )}
+          {repositories.length === 0 &&
+            !loading &&
+            (keyword || userOrg || repoName || language) && (
+              <p className="text-sm text-neutral-400">結果はありません</p>
+            )}
 
           {totalCount > 0 && (
             <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
                 <div className="flex items-center justify-center gap-2">
                   <button
@@ -299,7 +411,9 @@ export default function Home() {
                     ← 前へ
                   </button>
 
-                  <span className="text-sm font-medium text-neutral-300">{currentPage} / {totalPages}</span>
+                  <span className="text-sm font-medium text-neutral-300">
+                    {currentPage} / {totalPages}
+                  </span>
 
                   <button
                     type="button"
@@ -316,8 +430,11 @@ export default function Home() {
                     type="number"
                     min={1}
                     max={totalPages}
-                    value={pageInput}
-                    onChange={(e) => setPageInput(e.target.value)}
+                    value={pageInput ?? ""}
+                    onChange={(e) => {
+                      const nextValue = e.target.value;
+                      setPageInput(nextValue === "" ? null : Number(nextValue));
+                    }}
                     placeholder="page"
                     className="w-24 rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-sky-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
@@ -356,9 +473,13 @@ function Field({
 }) {
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-semibold text-neutral-100 sm:text-base">{label}</label>
+      <label className="block text-sm font-semibold text-neutral-100 sm:text-base">
+        {label}
+      </label>
       {children}
-      {helper && <div className="text-xs leading-5 text-neutral-400">{helper}</div>}
+      {helper && (
+        <div className="text-xs leading-5 text-neutral-400">{helper}</div>
+      )}
     </div>
   );
 }
@@ -368,16 +489,18 @@ function TextInput({
   onChange,
   onClear,
   placeholder,
+  type = "text",
 }: {
   value: string;
   onChange: (value: string) => void;
   onClear: () => void;
   placeholder: string;
+  type?: "text" | "date";
 }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       <input
-        type="text"
+        type={type}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}

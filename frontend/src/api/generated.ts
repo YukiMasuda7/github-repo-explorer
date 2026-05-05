@@ -31,6 +31,7 @@ export interface Repository {
   description: string | null;
   stargazers_count: number;
   forks_count: number;
+  watchers_count: number;
   language: string | null;
   owner: Owner;
 }
@@ -57,6 +58,14 @@ repo_name?: string | null;
  * プログラミング言語（例：python, javascript）
  */
 language?: string | null;
+/**
+ * 作成日（YYYY-MM-DD 以降）
+ */
+created_at?: string | null;
+/**
+ * 最終更新（YYYY-MM-DD 以降）
+ */
+pushed_at?: string | null;
 /**
  * ページ番号
  * @minimum 1
