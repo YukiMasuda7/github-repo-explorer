@@ -5,23 +5,79 @@
  * OpenAPI spec version: 0.1.0
  */
 import { api } from '../lib/api';
-export interface HelloResponse {
-  message: string;
+export type ValidationErrorCtx = { [key: string]: unknown };
+
+export interface ValidationError {
+  loc: (string | number)[];
+  msg: string;
+  type: string;
+  input?: unknown;
+  ctx?: ValidationErrorCtx;
 }
+
+export interface HTTPValidationError {
+  detail?: ValidationError[];
+}
+
+export interface Owner {
+  login: string;
+}
+
+export interface Repository {
+  id: number;
+  name: string;
+  full_name: string;
+  html_url: string;
+  description: string | null;
+  stargazers_count: number;
+  forks_count: number;
+  language: string | null;
+  owner: Owner;
+}
+
+export interface SearchResponse {
+  total_count: number;
+  items: Repository[];
+}
+
+export type SearchRepositoriesParams = {
+/**
+ * 検索キーワード
+ */
+keyword?: string | null;
+/**
+ * ユーザー/組織名（user:username または org:orgname）
+ */
+user_org?: string | null;
+/**
+ * リポジトリ名に含まれるテキスト
+ */
+repo_name?: string | null;
+/**
+ * プログラミング言語（例：python, javascript）
+ */
+language?: string | null;
+/**
+ * ページ番号
+ * @minimum 1
+ */
+page?: number;
+};
 
 export const getFastAPI = () => {
 /**
- * シンプルなテスト用エンドポイント。Helloメッセージを返す。
- * @summary 挨拶を返すAPI
+ * 複数フィルタを使ってGitHubのリポジトリを検索し、50件ずつ返す。
+ * @summary GitHubリポジトリ検索
  */
-const getHello = (
-
+const searchRepositories = (
+    params?: SearchRepositoriesParams,
  ) => {
-      return api<HelloResponse>(
-      {url: `/hello`, method: 'GET'
+      return api<SearchResponse>(
+      {url: `/repositories`, method: 'GET',
+        params
     },
       );
     }
 
-return {getHello}};
-export type GetHelloResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getFastAPI>['getHello']>>>
+return {searchRepositories}};
+export type SearchRepositoriesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getFastAPI>['searchRepositories']>>>

@@ -1,20 +1,397 @@
 "use client";
 
 import { useState } from "react";
-import { getHello } from "../api";
+import { searchRepositories } from "../api";
 
 export default function Home() {
-  const [message, setMessage] = useState("");
+  const [keyword, setKeyword] = useState("");
+  const [userOrg, setUserOrg] = useState("");
+  const [repoName, setRepoName] = useState("");
+  const [language, setLanguage] = useState("");
+  const [repositories, setRepositories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [totalCount, setTotalCount] = useState(0);
+  const [sortBy, setSortBy] = useState<"stars" | "forks" | "watchers">("stars");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageInput, setPageInput] = useState("1");
+  const itemsPerPage = 50;
 
-  const fetchData = async () => {
-    const res = await getHello();
-    setMessage(res.data.message);
+  const fetchRepositories = async (page: number) => {
+    if (!keyword.trim() && !userOrg.trim() && !repoName.trim() && !language.trim()) {
+      setError("少なくとも1つの検索条件を入力してください");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await searchRepositories({
+        keyword: keyword.trim() || undefined,
+        user_org: userOrg.trim() || undefined,
+        repo_name: repoName.trim() || undefined,
+        language: language.trim() || undefined,
+        page,
+      });
+      setRepositories(res.data.items || []);
+      setTotalCount(res.data.total_count || 0);
+      setCurrentPage(page);
+      setPageInput(String(page));
+    } catch (err: any) {
+      const errorMessage = err.message || "検索に失敗しました";
+      if (!errorMessage.includes("Request failed with status code 500")) {
+        setError(errorMessage);
+      } else {
+        setError("検索に失敗しました");
+      }
+      setRepositories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await fetchRepositories(1);
+  };
+
+  const getSortedRepositories = () => {
+    const sorted = [...repositories];
+    sorted.sort((a, b) => {
+      let aValue = 0;
+      let bValue = 0;
+
+      if (sortBy === "stars") {
+        aValue = a.stargazers_count;
+        bValue = b.stargazers_count;
+      } else if (sortBy === "forks") {
+        aValue = a.forks_count;
+        bValue = b.forks_count;
+      } else if (sortBy === "watchers") {
+        aValue = a.watchers_count;
+        bValue = b.watchers_count;
+      }
+
+      return sortOrder === "desc" ? bValue - aValue : aValue - bValue;
+    });
+
+    return sorted;
+  };
+
+  const handleClearAll = () => {
+    setKeyword("");
+    setUserOrg("");
+    setRepoName("");
+    setLanguage("");
+    setRepositories([]);
+    setError("");
+    setTotalCount(0);
+    setCurrentPage(1);
+    setPageInput("1");
+  };
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
+  const canGoPrevious = currentPage > 1;
+  const canGoNext = currentPage < totalPages;
+
+  const handlePreviousPage = async () => {
+    if (canGoPrevious) {
+      await fetchRepositories(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = async () => {
+    if (canGoNext) {
+      await fetchRepositories(currentPage + 1);
+    }
+  };
+
+  const handlePageJump = async () => {
+    const nextPage = Number.parseInt(pageInput, 10);
+
+    if (Number.isNaN(nextPage) || nextPage < 1) {
+      setPageInput(String(currentPage));
+      return;
+    }
+
+    if (nextPage > totalPages) {
+      setError(`そのページは範囲外です。最大ページ数は ${totalPages} です。`);
+      return;
+    }
+
+    await fetchRepositories(nextPage);
   };
 
   return (
-    <div>
-      <button onClick={fetchData}>取得</button>
-      <p>{message}</p>
+    <main className="min-h-screen bg-neutral-950 text-white">
+      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
+        <header className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            GitHub リポジトリ検索
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-300 sm:text-base">
+            <strong className="font-semibold text-white">検索シンタックス:</strong> AND（`&&` または スペース区切り）、OR（`||`）、NOT（`!` または `-`）
+                    <br />
+                    例: `react && typescript`, `vue || angular`, `!deprecated`
+          </p>
+        </header>
+
+        <section className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/30 backdrop-blur sm:p-6">
+          <form onSubmit={handleSearch} className="space-y-5">
+            <div className="space-y-5">
+              <Field
+                label="キーワード"
+              >
+                <TextInput
+                  value={keyword}
+                  onChange={setKeyword}
+                  placeholder="例: react, async"
+                  onClear={() => setKeyword("")}
+                />
+              </Field>
+
+              <Field label="ユーザー / 組織">
+                <TextInput
+                  value={userOrg}
+                  onChange={setUserOrg}
+                  placeholder="例: user:torvalds または org:facebook"
+                  onClear={() => setUserOrg("")}
+                />
+              </Field>
+
+              <Field label="リポジトリ名">
+                <TextInput
+                  value={repoName}
+                  onChange={setRepoName}
+                  placeholder="例: linux, react"
+                  onClear={() => setRepoName("")}
+                />
+              </Field>
+
+              <Field label="言語・技術">
+                <TextInput
+                  value={language}
+                  onChange={setLanguage}
+                  placeholder="例: python, javascript, typescript"
+                  onClear={() => setLanguage("")}
+                />
+              </Field>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex items-center justify-center rounded-xl bg-sky-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "検索中..." : "検索"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClearAll}
+                className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+              >
+                すべてクリア
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section className="mt-8 flex-1 space-y-4">
+          {error && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {error}
+            </div>
+          )}
+
+          {totalCount > 0 && (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm text-neutral-300 sm:text-base">
+                    見つかった件数: <span className="font-semibold text-white">{totalCount}</span> 件
+                  </p>
+                  <p className="text-xs text-neutral-400">
+                    ページ {currentPage} / {totalPages}（{itemsPerPage} 件）
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-semibold text-neutral-200">ソート:</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as "stars" | "forks" | "watchers")}
+                      className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-500"
+                    >
+                      <option value="stars">⭐ Star 数</option>
+                      <option value="forks">🍴 Fork 数</option>
+                      <option value="watchers">👀 Watch 数</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-semibold text-neutral-200">順序:</label>
+                    <select
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as "asc" | "desc")}
+                      className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-500"
+                    >
+                      <option value="desc">降順 (多い順)</option>
+                      <option value="asc">昇順 (少ない順)</option>
+                    </select>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            {getSortedRepositories().map((repo: any) => (
+              <article
+                key={repo.id}
+                className="w-full rounded-2xl border border-white/10 bg-white/5 p-5 shadow-lg shadow-black/20 transition hover:border-sky-400/40 hover:bg-white/[0.07]"
+              >
+                <h3 className="wrap-break-word text-lg font-semibold leading-7 text-white">
+                  <a
+                    href={repo.html_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="transition hover:text-sky-300 hover:underline"
+                  >
+                    {repo.full_name}
+                  </a>
+                </h3>
+
+                <p className="mt-2 line-clamp-3 wrap-break-word text-sm leading-6 text-neutral-300">
+                  {repo.description || "説明なし"}
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm text-neutral-300">
+                  <span>⭐ {repo.stargazers_count.toLocaleString()}</span>
+                  <span>🍴 {repo.forks_count.toLocaleString()}</span>
+                  <span>👀 {repo.watchers_count.toLocaleString()}</span>
+                  {repo.language && <span>📝 {repo.language}</span>}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {repositories.length === 0 && !loading && (keyword || userOrg || repoName || language) && (
+            <p className="text-sm text-neutral-400">結果はありません</p>
+          )}
+
+          {totalCount > 0 && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center">
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePreviousPage}
+                    disabled={!canGoPrevious || loading}
+                    className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    ← 前へ
+                  </button>
+
+                  <span className="text-sm font-medium text-neutral-300">{currentPage} / {totalPages}</span>
+
+                  <button
+                    type="button"
+                    onClick={handleNextPage}
+                    disabled={!canGoNext || loading}
+                    className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    次へ →
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-center gap-2">
+                  <input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={pageInput}
+                    onChange={(e) => setPageInput(e.target.value)}
+                    placeholder="page"
+                    className="w-24 rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-sky-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handlePageJump}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    移動
+                  </button>
+                </div>
+
+                {error && (
+                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                    {error}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function Field({
+  label,
+  helper,
+  children,
+}: {
+  label: string;
+  helper?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-semibold text-neutral-100 sm:text-base">{label}</label>
+      {children}
+      {helper && <div className="text-xs leading-5 text-neutral-400">{helper}</div>}
+    </div>
+  );
+}
+
+function TextInput({
+  value,
+  onChange,
+  onClear,
+  placeholder,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onClear: () => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <input
+        type="text"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-white/15 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
+      />
+      {value && (
+        <button
+          type="button"
+          onClick={onClear}
+          className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/15"
+        >
+          ✕ クリア
+        </button>
+      )}
     </div>
   );
 }
