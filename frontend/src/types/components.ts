@@ -1,15 +1,13 @@
 /**
  * コンポーネント Props の型定義
  */
-import { type Repository, type SearchResponse } from "./api";
+import { type Repository } from "./api";
 import {
   DateFilterOption,
   SortByOption,
   SortOrderOption,
   type SearchState,
 } from "./search";
-
-export interface PageHeaderProps {}
 
 export interface SearchFiltersProps {
   state: SearchState;

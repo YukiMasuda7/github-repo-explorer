@@ -1,4 +1,4 @@
-import { SortByOption, SortOrderOption, type SearchState } from "../types/search";
+import { SortByOption, SortOrderOption } from "../types/search";
 import { type ResultsSummaryProps } from "../types/components";
 
 export const ResultsSummary = ({
@@ -59,17 +59,14 @@ export const ResultsSummary = ({
               value={state.sortOrder}
               onChange={(e) => {
                 const v = e.target.value;
-                if (
-                  v === SortOrderOption.Asc ||
-                  v === SortOrderOption.Desc
-                ) {
+                if (v === SortOrderOption.Asc || v === SortOrderOption.Desc) {
                   onSortOrderChange(v as SortOrderOption);
                 }
               }}
               className="rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white outline-none transition focus:border-sky-500"
             >
-              <option value={SortOrderOption.Desc}>降順 (多い順)</option>
-              <option value={SortOrderOption.Asc}>昇順 (少ない順)</option>
+              <option value={SortOrderOption.Desc}>降順</option>
+              <option value={SortOrderOption.Asc}>昇順</option>
             </select>
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
 } from "../types/search";
 
 const ITEMS_PER_PAGE = 50;
+const MAX_TOTAL_COUNT = 1000; // GitHub API の検索上限
 
 export const useRepositorySearch = () => {
   const resultsSummaryRef = useRef<HTMLDivElement | null>(null);
@@ -31,12 +32,9 @@ export const useRepositorySearch = () => {
     pageInput: null,
   });
 
-  const updateState = useCallback(
-    (updates: Partial<SearchState>) => {
-      setState((prev: SearchState) => ({ ...prev, ...updates }));
-    },
-    []
-  );
+  const updateState = useCallback((updates: Partial<SearchState>) => {
+    setState((prev: SearchState) => ({ ...prev, ...updates }));
+  }, []);
 
   const fetchRepositories = useCallback(
     async (page: number) => {
@@ -98,7 +96,7 @@ export const useRepositorySearch = () => {
         updateState({ loading: false });
       }
     },
-    [state, updateState]
+    [state, updateState],
   );
 
   const getSortedRepositories = useCallback(() => {
@@ -131,7 +129,7 @@ export const useRepositorySearch = () => {
       e.preventDefault();
       await fetchRepositories(1);
     },
-    [fetchRepositories]
+    [fetchRepositories],
   );
 
   const handleChangeSortBy = useCallback(
@@ -141,7 +139,7 @@ export const useRepositorySearch = () => {
         await fetchRepositories(1);
       }
     },
-    [state.totalCount, fetchRepositories, updateState]
+    [state.totalCount, fetchRepositories, updateState],
   );
 
   const handleChangeSortOrder = useCallback(
@@ -151,7 +149,7 @@ export const useRepositorySearch = () => {
         await fetchRepositories(1);
       }
     },
-    [state.totalCount, fetchRepositories, updateState]
+    [state.totalCount, fetchRepositories, updateState],
   );
 
   const handleClearAll = useCallback(() => {
@@ -177,7 +175,10 @@ export const useRepositorySearch = () => {
   }, [state.currentPage, fetchRepositories]);
 
   const handleNextPage = useCallback(async () => {
-    const totalPages = Math.max(1, Math.ceil(state.totalCount / ITEMS_PER_PAGE));
+    const totalPages = Math.max(
+      1,
+      Math.ceil(state.totalCount / ITEMS_PER_PAGE),
+    );
     if (state.currentPage < totalPages) {
       await fetchRepositories(state.currentPage + 1);
     }
@@ -190,7 +191,10 @@ export const useRepositorySearch = () => {
         return;
       }
 
-      const totalPages = Math.max(1, Math.ceil(state.totalCount / ITEMS_PER_PAGE));
+      const totalPages = Math.max(
+        1,
+        Math.ceil(state.totalCount / ITEMS_PER_PAGE),
+      );
 
       if (pageInput < 1) {
         updateState({ pageInput: null });
@@ -206,10 +210,13 @@ export const useRepositorySearch = () => {
 
       await fetchRepositories(pageInput);
     },
-    [state.totalCount, fetchRepositories, updateState]
+    [state.totalCount, fetchRepositories, updateState],
   );
 
-  const totalPages = Math.max(1, Math.ceil(state.totalCount / ITEMS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(Math.min(state.totalCount, MAX_TOTAL_COUNT) / ITEMS_PER_PAGE),
+  );
   const canGoPrevious = state.currentPage > 1;
   const canGoNext = state.currentPage < totalPages;
 

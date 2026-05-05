@@ -4,26 +4,20 @@
  * FastAPI
  * OpenAPI spec version: 0.1.0
  */
-import type {
-  SearchRepositoriesParams,
-  SearchResponse
-} from './model';
+import type { SearchRepositoriesParams, SearchResponse } from "./model";
 
-import { api } from '../../lib/api';
+import { api } from "../../lib/api";
 export const getFastAPI = () => {
-/**
- * 複数フィルタを使ってGitHubのリポジトリを検索し、50件ずつ返す。
- * @summary GitHubリポジトリ検索
- */
-const searchRepositories = (
-    params?: SearchRepositoriesParams,
- ) => {
-      return api<SearchResponse>(
-      {url: `/repositories`, method: 'GET',
-        params
-    },
-      );
-    }
+  /**
+   * 複数フィルタを使ってGitHubのリポジトリを検索し、50件ずつ返す。
+   * @summary GitHubリポジトリ検索
+   */
+  const searchRepositories = (params?: SearchRepositoriesParams) => {
+    return api<SearchResponse>({ url: `/repositories`, method: "GET", params });
+  };
 
-return {searchRepositories}};
-export type SearchRepositoriesResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getFastAPI>['searchRepositories']>>>
+  return { searchRepositories };
+};
+export type SearchRepositoriesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getFastAPI>["searchRepositories"]>>
+>;

@@ -7,7 +7,6 @@ import { ResultsSummary } from "../components/ResultsSummary";
 import { RepositoryList } from "../components/RepositoryList";
 import { PaginationControls } from "../components/PaginationControls";
 import { useRepositorySearch } from "../hooks/useRepositorySearch";
-import { DateFilterOption } from "../types/search";
 
 export default function Home() {
   const {
@@ -15,7 +14,6 @@ export default function Home() {
     updateState,
     resultsSummaryRef,
     shouldScrollResultsRef,
-    fetchRepositories,
     getSortedRepositories,
     handleSearch,
     handleChangeSortBy,
@@ -42,7 +40,13 @@ export default function Home() {
         block: "start",
       });
     }
-  }, [state.currentPage, state.loading, state.totalCount]);
+  }, [
+    state.currentPage,
+    state.loading,
+    state.totalCount,
+    resultsSummaryRef,
+    shouldScrollResultsRef,
+  ]);
 
   const hasSearched =
     !!state.keyword ||

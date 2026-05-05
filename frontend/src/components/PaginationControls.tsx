@@ -48,9 +48,7 @@ export const PaginationControls = ({
             value={pageInput ?? ""}
             onChange={(e) => {
               const nextValue = e.target.value;
-              onPageInputChange(
-                nextValue === "" ? null : Number(nextValue)
-              );
+              onPageInputChange(nextValue === "" ? null : Number(nextValue));
             }}
             placeholder="page"
             className="w-24 rounded-lg border border-white/15 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-sky-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"

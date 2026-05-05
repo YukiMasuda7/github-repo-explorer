@@ -1,4 +1,4 @@
-import { DateFilterOption, type SearchState } from "../types/search";
+import { DateFilterOption } from "../types/search";
 import { type SearchFiltersProps } from "../types/components";
 
 export const SearchFilters = ({

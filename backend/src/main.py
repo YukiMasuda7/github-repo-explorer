@@ -15,10 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -----------------------------
-# Response Model
-# -----------------------------
-
 
 class Owner(BaseModel):
     login: str
@@ -40,14 +36,6 @@ class Repository(BaseModel):
 class SearchResponse(BaseModel):
     total_count: int
     items: List[Repository]
-
-
-# -----------------------------
-# Endpoint
-# -----------------------------
-
-
-# --- Enums for clarity and type-safety ---
 
 
 class DateFilter(str, Enum):
@@ -126,5 +114,8 @@ def search_repositories(
 
     res = requests.get(url, params=params)
     data = res.json()
+
+    # GitHub API の検索上限は1000件のため、total_count をキャップ
+    data["total_count"] = min(data.get("total_count", 0), 1000)
 
     return data

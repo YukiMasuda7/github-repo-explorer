@@ -37,6 +37,13 @@ GitHub のリポジトリをキーワード・ユーザー/組織・リポジト
 
 ## セットアップ（開発）
 
+### frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 ### backend
 ```bash
 cd backend
@@ -44,13 +51,6 @@ poetry install --no-root
 poetry run uvicorn src.main:app --reload
 ```
 
-### frontend
-```bash
-cd frontend
-npm install
-npx orval
-npm run dev
-```
 
 ### 環境変数
 - `frontend/.env`:
@@ -60,14 +60,17 @@ BACKEND_ORIGIN=http://127.0.0.1:8000
 ```
 
 ## フォーマット & Lint
-推奨実行順:
 
-1. `npx orval`（API クライアント生成）
-2. `npx prettier --write .`
-3. `npx eslint . --ext .ts,.tsx --fix`
-4. `npm run lint`（任意チェック）
+### Frontend
+```bash
+cd frontend
+npx orval
+npx prettier --write .
+npx eslint . --ext .ts,.tsx --fix
+npm run lint
+```
 
-Backend:
+### Backend
 ```bash
 cd backend
 poetry run black .
