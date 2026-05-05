@@ -20,7 +20,8 @@ OpenAPI + Orval によるAPIクライアント自動生成を実装
 
 GitHub のリポジトリをキーワード・ユーザー/組織・リポジトリ名・言語・日付で検索できる Web アプリケーションです。Next.js (TypeScript) と FastAPI (Python) を使用しています。
 
-![スクリーンショット](frontend/public/screenshots/overview.png)
+![スクリーンショット](frontend/public/screenshots/image1.png)
+![スクリーンショット](frontend/public/screenshots/image2.png)
 
 ## 主な機能
 - フリーテキスト検索（AND / OR / NOT をサポート）
@@ -39,7 +40,7 @@ GitHub のリポジトリをキーワード・ユーザー/組織・リポジト
 ### backend
 ```bash
 cd backend
-poetry install
+poetry install --no-root
 poetry run uvicorn src.main:app --reload
 ```
 
@@ -47,9 +48,7 @@ poetry run uvicorn src.main:app --reload
 ```bash
 cd frontend
 npm install
-# OpenAPI からクライアント生成
 npx orval
-# 開発サーバ
 npm run dev
 ```
 
@@ -75,6 +74,3 @@ poetry run black .
 poetry run ruff format .
 poetry run ruff check --fix .
 ```
-
-## 作者
-- GitHub: `@YukiMasuda7`
