@@ -1,5 +1,5 @@
 // API クライアントのラッパー
-import { getFastAPI } from "./generated";
+import { getFastAPI } from "./gen/fastAPI";
 
 const fastAPIClient = getFastAPI();
 
@@ -8,6 +8,5 @@ export const searchRepositories = fastAPIClient.searchRepositories;
 export type {
   SearchResponse,
   SearchRepositoriesParams,
-  SearchRepositoriesResult,
   Repository,
-} from "./generated";
+} from "./gen/models";

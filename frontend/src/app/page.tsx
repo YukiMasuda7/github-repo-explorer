@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { searchRepositories, Repository } from "../api";
+import { searchRepositories, type Repository } from "../api/clients";
 
 enum DateFilterOption {
   Created = "created",
