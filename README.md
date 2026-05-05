@@ -16,15 +16,27 @@ OpenAPI + Orval によるAPIクライアント自動生成を実装
 ---
 
 ## 機能
+# GitHub リポジトリ検索
 
-* GitHubリポジトリ検索
+GitHub のリポジトリをキーワード・ユーザー/組織・リポジトリ名・言語・日付で検索できる Web アプリケーションです。Next.js (TypeScript) と FastAPI (Python) を使用しています。
 
----
+![スクリーンショット](frontend/public/screenshots/overview.png)
 
-## セットアップ
+## 主な機能
+- フリーテキスト検索（AND / OR / NOT をサポート）
+- ページネーション（50件 / ページ）
+- ソート（Star / Fork / Watch）と昇順/降順切替
+- 日付フィルタ（作成日 / 更新日）
+- 結果カードにスター数・フォーク数・Watch 数を表示
+
+## 技術スタック
+- Frontend: Next.js (TypeScript), Tailwind CSS
+- Backend: FastAPI, requests, pydantic
+- API client: Orval (OpenAPI → TypeScript)
+
+## セットアップ（開発）
 
 ### backend
-
 ```bash
 cd backend
 poetry install
@@ -32,48 +44,37 @@ poetry run uvicorn src.main:app --reload
 ```
 
 ### frontend
+```bash
+cd frontend
+npm install
+# OpenAPI からクライアント生成
+npx orval
+# 開発サーバ
+npm run dev
+```
 
-`frontend/.env.local` を作成して、必要ならバックエンドの向きを設定します。
-
-`.env.local` の中身:
+### 環境変数
+- `frontend/.env`:
 
 ```env
 BACKEND_ORIGIN=http://127.0.0.1:8000
 ```
 
-その後にフロントを起動します。
+## フォーマット & Lint
+推奨実行順:
 
+1. `npx orval`（API クライアント生成）
+2. `npx prettier --write .`
+3. `npx eslint . --ext .ts,.tsx --fix`
+4. `npm run lint`（任意チェック）
+
+Backend:
 ```bash
-cd frontend
-npm install
-npm run dev
-```
-
----
-
-## APIドキュメント
-
-http://localhost:8000/docs
-
----
-
-## Formatting & Linting (変更後に実行)
-
-フロントエンドおよびバックエンドで変更を行ったら、以下のコマンドでフォーマットと静的チェックを実行してください。
-
-- Frontend (`frontend/`)
-
-```bash
-npx prettier --write .
-npm run lint
-```
-
-- Backend (Python, `backend/` - Poetry を使用)
-
-```bash
+cd backend
 poetry run black .
 poetry run ruff format .
 poetry run ruff check --fix .
 ```
 
-注: プロジェクトでは各種 code formatter と linter を使用しています。CI がある場合は CI のルールに合わせて実行してください。
+## 作者
+- GitHub: `@YukiMasuda7`

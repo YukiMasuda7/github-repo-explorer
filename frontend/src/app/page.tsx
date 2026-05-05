@@ -210,13 +210,11 @@ export default function Home() {
       <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col px-4 py-8 sm:px-6 lg:px-8">
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            GitHub リポジトリ検索
+            GitHub Repo Explorer
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-neutral-300 sm:text-base">
-            <strong className="font-semibold text-white">
-              検索シンタックス:
-            </strong>{" "}
-            AND（`&&` または スペース区切り）、OR（`||`）、NOT（`!` または `-`）
+            AND（`&&` または スペース区切り）、OR（`||`）、NOT（`!` または
+            `-`）使えます
             <br />
             例: `react && typescript`, `vue || angular`, `!deprecated`
           </p>
@@ -267,7 +265,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setDateFilter(DateFilterOption.Created)}
-                      className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      className={`inline-flex shrink-0 items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition ${
                         dateFilter === DateFilterOption.Created
                           ? "border-sky-500 bg-sky-600 text-white"
                           : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
@@ -278,7 +276,7 @@ export default function Home() {
                     <button
                       type="button"
                       onClick={() => setDateFilter(DateFilterOption.Pushed)}
-                      className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition ${
+                      className={`inline-flex shrink-0 items-center justify-center rounded-lg px-4 py-3 text-sm font-medium transition ${
                         dateFilter === DateFilterOption.Pushed
                           ? "border-sky-500 bg-sky-600 text-white"
                           : "border border-white/15 bg-white/10 text-white hover:bg-white/15"
@@ -287,19 +285,29 @@ export default function Home() {
                       🔄更新日
                     </button>
                   </div>
-                  {dateFilter !== null && (
-                    <div className="flex gap-2 sm:items-center">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="date"
-                          value={dateValue || ""}
-                          onChange={(e) => setDateValue(e.target.value || null)}
-                          className="rounded-lg border border-white/15 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
-                        />
-                        <span className="text-sm font-medium text-neutral-300 whitespace-nowrap">
-                          以降
-                        </span>
-                      </div>
+                  <div className="flex gap-2 sm:items-center">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="date"
+                        value={dateFilter ? dateValue || "" : ""}
+                        onChange={(e) =>
+                          dateFilter && setDateValue(e.target.value || null)
+                        }
+                        disabled={!dateFilter}
+                        className={`rounded-lg border border-white/15 bg-neutral-900 px-4 py-3 text-sm text-white outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20 ${
+                          dateFilter ? "" : "opacity-0 pointer-events-none"
+                        }`}
+                      />
+                      <span
+                        className={`text-sm font-medium text-neutral-300 whitespace-nowrap ${
+                          dateFilter ? "" : "opacity-0"
+                        }`}
+                      >
+                        以降
+                      </span>
+                    </div>
+
+                    {dateFilter ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -310,8 +318,15 @@ export default function Home() {
                       >
                         ✕ クリア
                       </button>
-                    </div>
-                  )}
+                    ) : (
+                      <div
+                        aria-hidden
+                        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white opacity-0 pointer-events-none"
+                      >
+                        ✕ クリア
+                      </div>
+                    )}
+                  </div>
                 </div>
               </Field>
             </div>
@@ -562,7 +577,7 @@ function TextInput({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-xl border border-white/15 bg-neutral-900 px-4 py-3 text-sm text-white placeholder:text-neutral-500 outline-none transition focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20"
       />
-      {value && (
+      {value ? (
         <button
           type="button"
           onClick={onClear}
@@ -570,6 +585,13 @@ function TextInput({
         >
           ✕ クリア
         </button>
+      ) : (
+        <div
+          aria-hidden
+          className="inline-flex shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-medium text-white opacity-0 pointer-events-none"
+        >
+          ✕ クリア
+        </div>
       )}
     </div>
   );
