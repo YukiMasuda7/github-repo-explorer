@@ -11,6 +11,57 @@ import {
 const ITEMS_PER_PAGE = 50;
 const MAX_TOTAL_COUNT = 1000; // GitHub API の検索上限
 
+const getFriendlyErrorMessage = (err: unknown): string => {
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "isAxiosError" in err &&
+    (err as { isAxiosError?: boolean }).isAxiosError
+  ) {
+    const axiosError = err as {
+      message?: string;
+      response?: {
+        status?: number;
+        data?: { detail?: string; message?: string };
+      };
+    };
+
+    const status = axiosError.response?.status;
+    const detail =
+      axiosError.response?.data?.detail ?? axiosError.response?.data?.message;
+
+    if (status === 422) {
+      return detail ?? "検索条件が不正です";
+    }
+
+    if (status === 401) {
+      return detail ?? "GitHub の認証に失敗しました";
+    }
+
+    if (status === 403) {
+      return detail ?? "GitHub API の利用制限に達した可能性があります";
+    }
+
+    if (detail) {
+      return detail;
+    }
+
+    if (axiosError.message) {
+      return axiosError.message;
+    }
+  }
+
+  if (err instanceof Error && err.message) {
+    return err.message;
+  }
+
+  if (typeof err === "string" && err) {
+    return err;
+  }
+
+  return "検索に失敗しました";
+};
+
 export const useRepositorySearch = () => {
   const resultsSummaryRef = useRef<HTMLDivElement | null>(null);
   const shouldScrollResultsRef = useRef(false);
@@ -78,19 +129,7 @@ export const useRepositorySearch = () => {
         });
       } catch (err: unknown) {
         shouldScrollResultsRef.current = false;
-        let errorMessage = "検索に失敗しました";
-
-        if (err instanceof Error) {
-          errorMessage = err.message || errorMessage;
-        } else if (typeof err === "string") {
-          errorMessage = err || errorMessage;
-        }
-
-        if (!errorMessage.includes("Request failed with status code 500")) {
-          updateState({ error: errorMessage });
-        } else {
-          updateState({ error: "検索に失敗しました" });
-        }
+        updateState({ error: getFriendlyErrorMessage(err) });
         updateState({ repositories: [] });
       } finally {
         updateState({ loading: false });
