@@ -47,7 +47,7 @@ npm run dev
 ### backend
 ```bash
 cd backend
-poetry install --no-root
+poetry install
 poetry run uvicorn src.main:app --reload
 ```
 
