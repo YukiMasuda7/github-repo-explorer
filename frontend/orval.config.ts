@@ -1,8 +1,6 @@
-import { config as loadEnv } from "dotenv";
-
-loadEnv({ path: ".env.local" });
-
-const openApiUrl = process.env.OPENAPI_URL;
+const openApiUrl =
+  process.env.OPENAPI_URL ??
+  `${process.env.NEXT_PUBLIC_API_BASE_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/openapi.json`;
 
 const orvalConfig = {
   api: {
