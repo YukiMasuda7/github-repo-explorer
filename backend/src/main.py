@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import requests
@@ -119,6 +119,15 @@ def search_repositories(
     }
 
     res = requests.get(url, params=params)
+
+    if res.status_code != 200:
+        try:
+            error_data = res.json()
+            message = error_data.get("message", "GitHub API error")
+        except Exception:
+            message = res.text or "GitHub API error"
+        raise HTTPException(status_code=res.status_code, detail=message)
+
     data = res.json()
 
     # GitHub API の検索上限は1000件のため、total_count をキャップ
