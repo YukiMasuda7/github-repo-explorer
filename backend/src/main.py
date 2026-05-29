@@ -8,9 +8,14 @@ import os
 
 app = FastAPI()
 
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+allow_origins = [
+    origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS"),
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
