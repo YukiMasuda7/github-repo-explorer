@@ -51,14 +51,6 @@ poetry install
 poetry run uvicorn src.main:app --reload
 ```
 
-
-### 環境変数
-- `frontend/.env`:
-
-```env
-BACKEND_ORIGIN=http://127.0.0.1:8000
-```
-
 ## フォーマット & Lint
 
 ### Frontend
